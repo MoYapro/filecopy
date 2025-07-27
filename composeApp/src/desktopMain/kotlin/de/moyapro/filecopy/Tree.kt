@@ -3,10 +3,7 @@ package de.moyapro.filecopy
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
@@ -15,11 +12,13 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import de.moyapro.filecopy.model.FileSystemNode
 import java.util.*
 
 const val SELECT = true
 const val OPEN = true
+const val FONT_SIZE = 20
 
 
 @Composable
@@ -34,10 +33,10 @@ fun Tree(rootDir: java.io.File) {
         LazyColumn(modifier = Modifier) {
             items(items = nodes, key = { it.id }) { node ->
                 AnimatedVisibility(node.isVisible) {
-                    Row(modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.fillMaxWidth().height(40.dp)) {
                         Selector(node) { nodes.select(node.id) }
                         TypeIndicator(node) { nodes.openCloseDirectory(node.id) }
-                        Text(node.text())
+                        Text(text = node.text(), fontSize = FONT_SIZE.sp)
                     }
                 }
             }
@@ -50,6 +49,7 @@ fun Selector(node: FileSystemNode, onClick: () -> Unit) = Box() {
     Text(
         text = (if (node.isSelected) "[✔]" else "[]"),
         textAlign = TextAlign.Center,
+        fontSize = FONT_SIZE.sp,
         modifier = Modifier
             .width(50.dp)
             .clickable(onClick = onClick)
@@ -66,6 +66,7 @@ fun TypeIndicator(node: FileSystemNode, onClick: () -> Unit) = Box() {
     Text(
         text = displaySymbol,
         textAlign = TextAlign.Center,
+        fontSize = FONT_SIZE.sp,
         modifier = Modifier
             .width(50.dp)
             .clickable(onClick = onClick)
