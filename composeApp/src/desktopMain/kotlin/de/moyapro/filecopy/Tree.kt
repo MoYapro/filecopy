@@ -19,6 +19,7 @@ import de.moyapro.filecopy.model.FileSystemNode
 import java.util.*
 
 const val SELECT = true
+const val OPEN = true
 
 
 @Composable
@@ -35,7 +36,7 @@ fun Tree(rootDir: java.io.File) {
                 AnimatedVisibility(node.isVisible) {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Selector(node) { nodes.select(node.id) }
-                        Text((if (node.isDirectory()) "[+]" else "♬"))
+                        TypeIndicator(node) { nodes.openCloseDirectory(node.id) }
                         Text(node.text())
                     }
                 }
@@ -53,6 +54,45 @@ fun Selector(node: FileSystemNode, onClick: () -> Unit) = Box() {
             .width(50.dp)
             .clickable(onClick = onClick)
     )
+}
+
+@Composable
+fun TypeIndicator(node: FileSystemNode, onClick: () -> Unit) = Box() {
+    val displaySymbol = when {
+        node.isFile() -> "♬"
+        node.isChildrenVisible -> "[ ]"
+        else -> "[+]"
+    }
+    Text(
+        text = displaySymbol,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .width(50.dp)
+            .clickable(onClick = onClick)
+    )
+}
+
+fun MutableList<FileSystemNode>.openCloseDirectory(id: UUID) {
+    var startIndex = -1
+    lateinit var clickedNodeName: String
+    var openOrClose = OPEN
+    val replacedNodes = mutableListOf<FileSystemNode>()
+
+    for (i in indices) {
+        if (startIndex == -1 && this[i].id == id) {
+            startIndex = i
+            openOrClose = !this[i].isChildrenVisible
+            clickedNodeName = this[i].text()
+            replacedNodes.add(this[i].copy(isChildrenVisible = openOrClose))
+        } else if (startIndex >= 0 && this[i].text().startsWith(clickedNodeName)) {
+            replacedNodes.add(this[i].copy(isVisible = openOrClose, isChildrenVisible = openOrClose))
+        }
+    }
+
+    require(startIndex >= 0) { "Element to replace is not in the list." }
+    replacedNodes.forEachIndexed { index, node ->
+        set(startIndex + index, node)
+    }
 }
 
 fun MutableList<FileSystemNode>.select(id: UUID) {
@@ -74,12 +114,8 @@ fun MutableList<FileSystemNode>.select(id: UUID) {
 
     require(startIndex >= 0) { "Element to replace is not in the list." }
     replacedNodes.forEachIndexed { index, node ->
-        set(
-            startIndex + index,
-            node
-        )
+        set(startIndex + index, node)
     }
-
 }
 
 fun MutableList<FileSystemNode>.replace(elementToReplace: FileSystemNode) {
