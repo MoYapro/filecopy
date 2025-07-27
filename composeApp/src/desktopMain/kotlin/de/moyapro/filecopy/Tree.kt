@@ -16,6 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import de.moyapro.filecopy.model.FileSystemNode
+import java.util.*
+
+const val SELECT = true
+
 
 @Composable
 fun Tree(rootDir: java.io.File) {
@@ -27,16 +31,10 @@ fun Tree(rootDir: java.io.File) {
             .fillMaxWidth()
     ) {
         LazyColumn(modifier = Modifier) {
-            items(items = nodes, key = { it.hashCode() }) { node ->
+            items(items = nodes, key = { it.id }) { node ->
                 AnimatedVisibility(node.isVisible) {
                     Row(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = (if (node.isSelected) "[✔]" else "[]"),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .width(50.dp)
-                                .clickable(onClick = { nodes.replace(node.copy(isSelected = !node.isSelected)) })
-                        )
+                        Selector(node) { nodes.select(node.id) }
                         Text((if (node.isDirectory()) "[+]" else "♬"))
                         Text(node.text())
                     }
@@ -44,6 +42,44 @@ fun Tree(rootDir: java.io.File) {
             }
         }
     }
+}
+
+@Composable
+fun Selector(node: FileSystemNode, onClick: () -> Unit) = Box() {
+    Text(
+        text = (if (node.isSelected) "[✔]" else "[]"),
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .width(50.dp)
+            .clickable(onClick = onClick)
+    )
+}
+
+fun MutableList<FileSystemNode>.select(id: UUID) {
+    var startIndex = -1
+    lateinit var clickedNodeName: String
+    var selectOrDeselect = SELECT
+    val replacedNodes = mutableListOf<FileSystemNode>()
+
+    for (i in indices) {
+        if (startIndex == -1 && this[i].id == id) {
+            startIndex = i
+            selectOrDeselect = !this[i].isSelected
+            clickedNodeName = this[i].text()
+            replacedNodes.add(this[i].copy(isSelected = selectOrDeselect))
+        } else if (startIndex >= 0 && this[i].text().startsWith(clickedNodeName)) {
+            replacedNodes.add(this[i].copy(isSelected = selectOrDeselect))
+        }
+    }
+
+    require(startIndex >= 0) { "Element to replace is not in the list." }
+    replacedNodes.forEachIndexed { index, node ->
+        set(
+            startIndex + index,
+            node
+        )
+    }
+
 }
 
 fun MutableList<FileSystemNode>.replace(elementToReplace: FileSystemNode) {
