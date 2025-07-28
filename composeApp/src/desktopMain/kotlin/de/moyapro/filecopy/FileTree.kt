@@ -24,6 +24,7 @@ import java.util.*
 
 const val SELECT = true
 const val OPEN = true
+const val CLOSE = false
 
 
 @Composable
@@ -135,6 +136,7 @@ fun TypeIndicator(node: FileSystemNode, onClick: () -> Unit) = Box() {
 fun MutableList<FileSystemNode>.openCloseDirectory(id: UUID) {
     var startIndex = -1
     lateinit var clickedNodeName: String
+    var pathDepth: Int = -1
     var openOrClose = OPEN
     val replacedNodes = mutableListOf<FileSystemNode>()
 
@@ -143,16 +145,31 @@ fun MutableList<FileSystemNode>.openCloseDirectory(id: UUID) {
             startIndex = i
             openOrClose = !this[i].isChildrenVisible
             clickedNodeName = this[i].text()
+            pathDepth = countOccurences(clickedNodeName, '/') + 1
             replacedNodes.add(this[i].copy(isChildrenVisible = openOrClose))
-        } else if (startIndex >= 0 && this[i].text().startsWith(clickedNodeName)) {
-            replacedNodes.add(this[i].copy(isVisible = openOrClose, isChildrenVisible = openOrClose))
+        } else if (openOrClose == OPEN) {
+            if (startIndex >= 0 && this[i].text()
+                    .startsWith(clickedNodeName) && pathDepth == countOccurences(this[i].text(), '/')
+            ) {
+                replacedNodes.add(this[i].copy(isVisible = openOrClose, isChildrenVisible = false))
+            }
+        } else {
+            if (this[i].text().startsWith(clickedNodeName)
+            ) {
+                replacedNodes.add(this[i].copy(isVisible = openOrClose, isChildrenVisible = openOrClose))
+            }
         }
     }
 
     require(startIndex >= 0) { "Element to replace is not in the list." }
-    replacedNodes.forEachIndexed { index, node ->
-        set(startIndex + index, node)
+    replacedNodes.forEach { node ->
+        val replaceIndex = indexOfFirst { it.id == node.id }
+        set(replaceIndex, node)
     }
+}
+
+fun countOccurences(haystack: String, needle: Char): Int {
+    return haystack.count { it == needle }
 }
 
 fun MutableList<FileSystemNode>.select(id: UUID) {
