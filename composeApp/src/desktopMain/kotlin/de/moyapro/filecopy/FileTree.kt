@@ -11,8 +11,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.toMutableStateList
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
@@ -20,9 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.moyapro.filecopy.model.FileSystemNode
-import de.moyapro.filecopy.theme.md_theme_dark_onBackground
-import de.moyapro.filecopy.theme.md_theme_dark_onSurface
-import de.moyapro.filecopy.theme.md_theme_dark_outline
+import de.moyapro.filecopy.theme.*
 import java.util.*
 
 const val SELECT = true
@@ -30,13 +27,13 @@ const val OPEN = true
 
 
 @Composable
-fun FileTree(rootDir: java.io.File) {
+fun FileTree(initialRootDir: java.io.File) {
+    var rootDir by remember { mutableStateOf(initialRootDir) }
+    var isValidDirectory by remember { mutableStateOf(rootDir.isDirectory && rootDir.canRead() && rootDir.canWrite()) }
     val nodes = loadDirectoryContents(rootDir).toMutableStateList()
-
+    var sourceDirectory by remember { mutableStateOf(rootDir.absolutePath) }
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -44,12 +41,29 @@ fun FileTree(rootDir: java.io.File) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             TextField(
-                modifier = Modifier.fillMaxWidth(0.5f),
-                state = rememberTextFieldState(initialText = rootDir.absolutePath),
+                modifier = Modifier.fillMaxWidth(0.4f),
+                value = sourceDirectory,
                 label = { Text("Source directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
-                colors = TextFieldDefaults.textFieldColors(textColor = md_theme_dark_onSurface),
+                colors = TextFieldDefaults.textFieldColors(
+                    textColor = md_theme_dark_onSurface,
+                    backgroundColor = (if (isValidDirectory) md_theme_dark_surface else md_theme_dark_error),
+                ),
                 textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
+                onValueChange = { newText ->
+                    sourceDirectory = newText
+                    val newFile = java.io.File(sourceDirectory)
+                    isValidDirectory = newFile.isDirectory && newFile.canRead() && newFile.canWrite()
+                },
             )
+            Button(onClick = {
+                if (!isValidDirectory) return@Button
+                nodes.clear()
+                nodes.addAll(
+                    loadDirectoryContents(java.io.File(sourceDirectory))
+                )
+            }) {
+                Text("Load source")
+            }
             TextField(
                 modifier = Modifier.fillMaxWidth(0.7f),
                 state = rememberTextFieldState(initialText = ""),
