@@ -38,14 +38,28 @@ fun FileTree(rootDir: java.io.File) {
             .fillMaxWidth()
 
     ) {
-        TextField(
-            state = rememberTextFieldState(initialText = ""),
-            label = { Text("Target directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
-            colors = TextFieldDefaults.textFieldColors(textColor = md_theme_dark_onSurface),
-            textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
-        )
-        Button(onClick = {}) {
-            Text("Copy")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            TextField(
+                modifier = Modifier.fillMaxWidth(0.5f),
+                state = rememberTextFieldState(initialText = rootDir.absolutePath),
+                label = { Text("Source directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
+                colors = TextFieldDefaults.textFieldColors(textColor = md_theme_dark_onSurface),
+                textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
+            )
+            TextField(
+                modifier = Modifier.fillMaxWidth(0.7f),
+                state = rememberTextFieldState(initialText = ""),
+                label = { Text("Target directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
+                colors = TextFieldDefaults.textFieldColors(textColor = md_theme_dark_onSurface),
+                textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
+            )
+            Button(onClick = {}) {
+                Text("Copy")
+            }
         }
         LazyColumn(modifier = Modifier) {
             items(items = nodes, key = { it.id }) { node ->
