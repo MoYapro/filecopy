@@ -1,43 +1,56 @@
 package de.moyapro.filecopy
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material.Button
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.toMutableStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.moyapro.filecopy.model.FileSystemNode
+import de.moyapro.filecopy.theme.md_theme_dark_onBackground
+import de.moyapro.filecopy.theme.md_theme_dark_onSurface
+import de.moyapro.filecopy.theme.md_theme_dark_outline
 import java.util.*
 
 const val SELECT = true
 const val OPEN = true
-const val FONT_SIZE = 20
 
 
 @Composable
-fun Tree(rootDir: java.io.File) {
+fun FileTree(rootDir: java.io.File) {
     val nodes = loadDirectoryContents(rootDir).toMutableStateList()
 
-    Box(
+    Column(
         modifier = Modifier
-            .background(color = androidx.compose.ui.graphics.Color.LightGray)
             .fillMaxWidth()
+
     ) {
+        TextField(
+            state = rememberTextFieldState(initialText = ""),
+            label = { Text("Target directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
+            colors = TextFieldDefaults.textFieldColors(textColor = md_theme_dark_onSurface),
+            textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
+        )
+        Button(onClick = {}) {
+            Text("Copy")
+        }
         LazyColumn(modifier = Modifier) {
             items(items = nodes, key = { it.id }) { node ->
                 AnimatedVisibility(node.isVisible) {
-                    Row(modifier = Modifier.fillMaxWidth().height(40.dp)) {
-                        Selector(node) { nodes.select(node.id) }
-                        TypeIndicator(node) { nodes.openCloseDirectory(node.id) }
-                        Text(text = node.text(), fontSize = FONT_SIZE.sp)
-                    }
+                    FileRow(node, nodes)
                 }
             }
         }
@@ -45,11 +58,28 @@ fun Tree(rootDir: java.io.File) {
 }
 
 @Composable
+fun FileRow(node: FileSystemNode, nodes: MutableList<FileSystemNode> = mutableListOf()) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .border(1.dp, md_theme_dark_outline),
+        verticalAlignment = Alignment.CenterVertically
+
+    ) {
+        Selector(node) { nodes.select(node.id) }
+        TypeIndicator(node) { nodes.openCloseDirectory(node.id) }
+        Text(text = node.text(), fontSize = 22.sp, color = md_theme_dark_onBackground)
+    }
+}
+
+
+@Composable
 fun Selector(node: FileSystemNode, onClick: () -> Unit) = Box() {
     Text(
         text = (if (node.isSelected) "[✔]" else "[]"),
-        textAlign = TextAlign.Center,
-        fontSize = FONT_SIZE.sp,
+        textAlign = TextAlign.Center, fontSize = 22.sp,
+        color = md_theme_dark_onBackground,
         modifier = Modifier
             .width(50.dp)
             .clickable(onClick = onClick)
@@ -66,7 +96,8 @@ fun TypeIndicator(node: FileSystemNode, onClick: () -> Unit) = Box() {
     Text(
         text = displaySymbol,
         textAlign = TextAlign.Center,
-        fontSize = FONT_SIZE.sp,
+        fontSize = 22.sp,
+        color = md_theme_dark_onBackground,
         modifier = Modifier
             .width(50.dp)
             .clickable(onClick = onClick)
