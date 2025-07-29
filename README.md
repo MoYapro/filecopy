@@ -1,3 +1,12 @@
+# Purpose
+
+Copy files from multiple direcories into a single target folder
+
+
+
+
+# Technology
+
 This is a Kotlin Multiplatform project targeting Desktop.
 
 * `/composeApp` is for code that will be shared across your Compose Multiplatform applications.
