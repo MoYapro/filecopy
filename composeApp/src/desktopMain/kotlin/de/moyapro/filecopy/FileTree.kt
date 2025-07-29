@@ -90,7 +90,7 @@ fun FileTree(initialRootDir: File) {
                 }
             }
             Button(onClick = { copy(nodes, targetDirectory) }) {
-                Text("Copy")
+                Text("Copy ${nodes.filter { it.isSelected && it.isFile() }.size} files")
             }
         }
         LazyColumn(modifier = Modifier) {
