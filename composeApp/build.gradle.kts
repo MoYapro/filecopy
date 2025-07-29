@@ -39,7 +39,7 @@ compose.desktop {
         mainClass = "de.moyapro.filecopy.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.AppImage)
             packageName = "de.moyapro.filecopy"
             packageVersion = "1.0.0"
         }
