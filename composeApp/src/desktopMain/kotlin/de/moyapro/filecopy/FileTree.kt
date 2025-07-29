@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -20,59 +19,77 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.moyapro.filecopy.model.FileSystemNode
 import de.moyapro.filecopy.theme.*
+import java.io.File
 import java.util.*
 
 const val SELECT = true
 const val OPEN = true
-const val CLOSE = false
 
 
 @Composable
-fun FileTree(initialRootDir: java.io.File) {
+fun FileTree(initialRootDir: File) {
     var rootDir by remember { mutableStateOf(initialRootDir) }
-    var isValidDirectory by remember { mutableStateOf(rootDir.isDirectory && rootDir.canRead() && rootDir.canWrite()) }
+    var isValidSourceDirectory by remember { mutableStateOf(rootDir.isDirectory && rootDir.canRead() && rootDir.canWrite()) }
     val nodes = loadDirectoryContents(rootDir).toMutableStateList()
     var sourceDirectory by remember { mutableStateOf(rootDir.absolutePath) }
+    var targetDirectory by remember { mutableStateOf("/home/tom/outdir") }
+    var isValidTargetDirectory by remember {
+        val target = File(targetDirectory)
+        mutableStateOf(target.isDirectory && target.canRead() && target.canWrite())
+    }
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            TextField(
-                modifier = Modifier.fillMaxWidth(0.4f),
-                value = sourceDirectory,
-                label = { Text("Source directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
-                colors = TextFieldDefaults.textFieldColors(
-                    textColor = md_theme_dark_onSurface,
-                    backgroundColor = (if (isValidDirectory) md_theme_dark_surface else md_theme_dark_error),
-                ),
-                textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
-                onValueChange = { newText ->
-                    sourceDirectory = newText
-                    val newFile = java.io.File(sourceDirectory)
-                    isValidDirectory = newFile.isDirectory && newFile.canRead() && newFile.canWrite()
-                },
-            )
-            Button(onClick = {
-                if (!isValidDirectory) return@Button
-                nodes.clear()
-                nodes.addAll(
-                    loadDirectoryContents(java.io.File(sourceDirectory))
+            Row(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
+                TextField(
+                    modifier = Modifier.fillMaxWidth(.9f),
+                    value = sourceDirectory,
+                    label = { Text("Source directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
+                    colors = TextFieldDefaults.textFieldColors(
+                        textColor = md_theme_dark_onSurface,
+                        backgroundColor = (if (isValidSourceDirectory) md_theme_dark_surface else md_theme_dark_error),
+                    ),
+                    textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
+                    onValueChange = { newText ->
+                        sourceDirectory = newText
+                        val newFile = File(sourceDirectory)
+                        isValidSourceDirectory = newFile.isDirectory && newFile.canRead() && newFile.canWrite()
+                    },
                 )
-            }) {
-                Text("Load source")
+                Button(onClick = {
+                    if (!isValidSourceDirectory) return@Button
+                    nodes.clear()
+                    nodes.addAll(
+                        loadDirectoryContents(File(sourceDirectory))
+                    )
+                }) {
+                    Text("Load source")
+                }
             }
-            TextField(
-                modifier = Modifier.fillMaxWidth(0.7f),
-                state = rememberTextFieldState(initialText = ""),
-                label = { Text("Target directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
-                colors = TextFieldDefaults.textFieldColors(textColor = md_theme_dark_onSurface),
-                textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
-            )
-            Button(onClick = {}) {
+            Row(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
+                TextField(
+                    modifier = Modifier.fillMaxWidth(0.9f),
+                    value = targetDirectory,
+                    onValueChange = { newText ->
+                        targetDirectory = newText
+                        isValidTargetDirectory =
+                            File(targetDirectory).isDirectory && File(targetDirectory).canRead() && File(targetDirectory).canWrite()
+                    },
+                    label = { Text("Target directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
+                    colors = TextFieldDefaults.textFieldColors(
+                        textColor = md_theme_dark_onSurface,
+                        backgroundColor = (if (isValidTargetDirectory) md_theme_dark_surface else md_theme_dark_error),
+                    ),
+                    textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
+                )
+                Button(onClick = { isValidTargetDirectory = createOutputDirectory(targetDirectory) }) {
+                    Text("Create")
+                }
+            }
+            Button(onClick = { copy(nodes, targetDirectory) }) {
                 Text("Copy")
             }
         }
@@ -89,10 +106,7 @@ fun FileTree(initialRootDir: java.io.File) {
 @Composable
 fun FileRow(node: FileSystemNode, nodes: MutableList<FileSystemNode> = mutableListOf()) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(40.dp)
-            .border(1.dp, md_theme_dark_outline),
+        modifier = Modifier.fillMaxWidth().height(40.dp).border(1.dp, md_theme_dark_outline),
         verticalAlignment = Alignment.CenterVertically
 
     ) {
@@ -107,11 +121,10 @@ fun FileRow(node: FileSystemNode, nodes: MutableList<FileSystemNode> = mutableLi
 fun Selector(node: FileSystemNode, onClick: () -> Unit) = Box() {
     Text(
         text = (if (node.isSelected) "[✔]" else "[]"),
-        textAlign = TextAlign.Center, fontSize = 22.sp,
+        textAlign = TextAlign.Center,
+        fontSize = 22.sp,
         color = md_theme_dark_onBackground,
-        modifier = Modifier
-            .width(50.dp)
-            .clickable(onClick = onClick)
+        modifier = Modifier.width(50.dp).clickable(onClick = onClick)
     )
 }
 
@@ -127,9 +140,7 @@ fun TypeIndicator(node: FileSystemNode, onClick: () -> Unit) = Box() {
         textAlign = TextAlign.Center,
         fontSize = 22.sp,
         color = md_theme_dark_onBackground,
-        modifier = Modifier
-            .width(50.dp)
-            .clickable(onClick = onClick)
+        modifier = Modifier.width(50.dp).clickable(onClick = onClick)
     )
 }
 
@@ -154,8 +165,7 @@ fun MutableList<FileSystemNode>.openCloseDirectory(id: UUID) {
                 replacedNodes.add(this[i].copy(isVisible = openOrClose, isChildrenVisible = false))
             }
         } else {
-            if (this[i].text().startsWith(clickedNodeName)
-            ) {
+            if (this[i].text().startsWith(clickedNodeName)) {
                 replacedNodes.add(this[i].copy(isVisible = openOrClose, isChildrenVisible = openOrClose))
             }
         }
@@ -205,4 +215,24 @@ fun MutableList<FileSystemNode>.replace(elementToReplace: FileSystemNode) {
     }
     require(index >= 0) { "Element to replace is not in the list." }
     set(index, elementToReplace)
+}
+
+
+fun createOutputDirectory(targetDirectory: String): Boolean {
+    val target = File(targetDirectory)
+    if (!target.exists()) {
+        target.mkdirs()
+        return true
+    } else if (!target.isDirectory) {
+        return false
+    } else if (!target.canWrite()) {
+        return false
+    }
+    return false
+}
+
+fun copy(nodes: MutableList<FileSystemNode>, targetDirectory: String) {
+    val copyFiles = nodes.filter { it.isSelected && it.isFile() }
+    copyFiles.forEach { sourceFile ->
+        sourceFile.file.copyTo(File("$targetDirectory/${sourceFile.file.name}")) }
 }
