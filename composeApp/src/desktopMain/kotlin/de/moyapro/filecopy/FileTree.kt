@@ -18,11 +18,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.moyapro.filecopy.model.FileSystemNode
+import de.moyapro.filecopy.model.SELECTION.*
 import de.moyapro.filecopy.theme.*
 import java.io.File
 import java.util.*
 
-const val SELECT = true
 const val OPEN = true
 const val SELECTION_FONT_SIZE: Int = 32
 
@@ -48,7 +48,13 @@ fun FileTree(initialRootDir: File) {
                 TextField(
                     modifier = Modifier.fillMaxWidth(.9f),
                     value = sourceDirectory,
-                    label = { Text("Source directory", fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onSurface) },
+                    label = {
+                        Text(
+                            "Source directory",
+                            fontSize = SELECTION_FONT_SIZE.sp,
+                            color = md_theme_dark_onSurface
+                        )
+                    },
                     colors = TextFieldDefaults.textFieldColors(
                         textColor = md_theme_dark_onSurface,
                         backgroundColor = (if (isValidSourceDirectory) md_theme_dark_surface else md_theme_dark_error),
@@ -79,7 +85,13 @@ fun FileTree(initialRootDir: File) {
                         isValidTargetDirectory =
                             File(targetDirectory).isDirectory && File(targetDirectory).canRead() && File(targetDirectory).canWrite()
                     },
-                    label = { Text("Target directory", fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onSurface) },
+                    label = {
+                        Text(
+                            "Target directory",
+                            fontSize = SELECTION_FONT_SIZE.sp,
+                            color = md_theme_dark_onSurface
+                        )
+                    },
                     colors = TextFieldDefaults.textFieldColors(
                         textColor = md_theme_dark_onSurface,
                         backgroundColor = (if (isValidTargetDirectory) md_theme_dark_surface else md_theme_dark_error),
@@ -91,7 +103,7 @@ fun FileTree(initialRootDir: File) {
                 }
             }
             Button(onClick = { copy(nodes, targetDirectory) }) {
-                Text("Copy ${nodes.filter { it.isSelected && it.isFile() }.size} files")
+                Text("Copy ${nodes.filter { it.isSelected == YES && it.isFile() }.size} files")
             }
         }
         LazyColumn(modifier = Modifier) {
@@ -111,7 +123,7 @@ fun FileRow(node: FileSystemNode, nodes: MutableList<FileSystemNode> = mutableLi
         verticalAlignment = Alignment.CenterVertically
 
     ) {
-        Selector(node) { nodes.select(node.id) }
+        SelectionIndicator(node) { nodes.select(node.id) }
         TypeIndicator(node) { nodes.openCloseDirectory(node.id) }
         Text(text = node.text(), fontSize = 22.sp, color = md_theme_dark_onBackground)
     }
@@ -119,14 +131,21 @@ fun FileRow(node: FileSystemNode, nodes: MutableList<FileSystemNode> = mutableLi
 
 
 @Composable
-fun Selector(node: FileSystemNode, onClick: () -> Unit) = Box() {
-    Text(
-        text = (if (node.isSelected) "[✔]" else "[]"),
-        textAlign = TextAlign.Center,
-        fontSize = 22.sp,
-        color = md_theme_dark_onBackground,
-        modifier = Modifier.width(50.dp).clickable(onClick = onClick)
-    )
+fun SelectionIndicator(node: FileSystemNode, onClick: () -> Unit) {
+    val text = when (node.isSelected) {
+        YES -> "[✔]"
+        PARTIAL -> "[-]"
+        NO -> "[ . ]"
+    }
+    Box() {
+        Text(
+            text = text,
+            textAlign = TextAlign.Center,
+            fontSize = 22.sp,
+            color = md_theme_dark_onBackground,
+            modifier = Modifier.width(50.dp).clickable(onClick = onClick)
+        )
+    }
 }
 
 @Composable
@@ -186,17 +205,17 @@ fun countOccurences(haystack: String, needle: Char): Int {
 fun MutableList<FileSystemNode>.select(id: UUID) {
     var startIndex = -1
     lateinit var clickedNodeName: String
-    var selectOrDeselect = SELECT
+    var switchToSelection = YES
     val replacedNodes = mutableListOf<FileSystemNode>()
 
     for (i in indices) {
         if (startIndex == -1 && this[i].id == id) {
             startIndex = i
-            selectOrDeselect = !this[i].isSelected
+            switchToSelection = this[i].isSelected.invert()
             clickedNodeName = this[i].text()
-            replacedNodes.add(this[i].copy(isSelected = selectOrDeselect))
+            replacedNodes.add(this[i].copy(isSelected = switchToSelection))
         } else if (startIndex >= 0 && this[i].text().startsWith(clickedNodeName)) {
-            replacedNodes.add(this[i].copy(isSelected = selectOrDeselect))
+            replacedNodes.add(this[i].copy(isSelected = switchToSelection))
         }
     }
 
@@ -233,7 +252,8 @@ fun createOutputDirectory(targetDirectory: String): Boolean {
 }
 
 fun copy(nodes: MutableList<FileSystemNode>, targetDirectory: String) {
-    val copyFiles = nodes.filter { it.isSelected && it.isFile() }
+    val copyFiles = nodes.filter { it.isSelected == YES && it.isFile() }
     copyFiles.forEach { sourceFile ->
-        sourceFile.file.copyTo(File("$targetDirectory/${sourceFile.file.name}")) }
+        sourceFile.file.copyTo(File("$targetDirectory/${sourceFile.file.name}"))
+    }
 }

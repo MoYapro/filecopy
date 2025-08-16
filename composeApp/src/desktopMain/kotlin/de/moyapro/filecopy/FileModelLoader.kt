@@ -9,6 +9,7 @@ fun loadDirectoryContents(directory: File): List<FileSystemNode> {
     currentWithSubdirs.sortWith(compareBy({ it.absolutePath }, { it.isDirectory }))
     val dirNodes = currentWithSubdirs.map(::FileSystemNode)
     dirNodes[0].isVisible = true
+    dirNodes[0].isChildrenVisible = false
     return dirNodes
 }
 
