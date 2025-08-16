@@ -7,7 +7,9 @@ fun loadDirectoryContents(directory: File): List<FileSystemNode> {
     val currentWithSubdirs = loadSubdir(directory)
     if (currentWithSubdirs.isEmpty()) return emptyList()
     currentWithSubdirs.sortWith(compareBy({ it.absolutePath }, { it.isDirectory }))
-    val dirNodes = currentWithSubdirs.map(::FileSystemNode)
+    val dirNodes = currentWithSubdirs
+        .filter(::isFileVisible)
+        .map(::FileSystemNode)
     dirNodes[0].isVisible = true
     dirNodes[0].isChildrenVisible = false
     return dirNodes
@@ -24,3 +26,5 @@ fun loadSubdir(directory: File): MutableList<File> {
     }
     return currentWithSubdirs
 }
+
+private fun isFileVisible(file: File) = !file.isHidden
