@@ -24,6 +24,7 @@ import java.util.*
 
 const val SELECT = true
 const val OPEN = true
+const val SELECTION_FONT_SIZE: Int = 32
 
 
 @Composable
@@ -47,12 +48,12 @@ fun FileTree(initialRootDir: File) {
                 TextField(
                     modifier = Modifier.fillMaxWidth(.9f),
                     value = sourceDirectory,
-                    label = { Text("Source directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
+                    label = { Text("Source directory", fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onSurface) },
                     colors = TextFieldDefaults.textFieldColors(
                         textColor = md_theme_dark_onSurface,
                         backgroundColor = (if (isValidSourceDirectory) md_theme_dark_surface else md_theme_dark_error),
                     ),
-                    textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
+                    textStyle = TextStyle(fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onBackground),
                     onValueChange = { newText ->
                         sourceDirectory = newText
                         val newFile = File(sourceDirectory)
@@ -78,12 +79,12 @@ fun FileTree(initialRootDir: File) {
                         isValidTargetDirectory =
                             File(targetDirectory).isDirectory && File(targetDirectory).canRead() && File(targetDirectory).canWrite()
                     },
-                    label = { Text("Target directory", fontSize = 18.sp, color = md_theme_dark_onSurface) },
+                    label = { Text("Target directory", fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onSurface) },
                     colors = TextFieldDefaults.textFieldColors(
                         textColor = md_theme_dark_onSurface,
                         backgroundColor = (if (isValidTargetDirectory) md_theme_dark_surface else md_theme_dark_error),
                     ),
-                    textStyle = TextStyle(fontSize = 22.sp, color = md_theme_dark_onBackground),
+                    textStyle = TextStyle(fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onBackground),
                 )
                 Button(onClick = { isValidTargetDirectory = createOutputDirectory(targetDirectory) }) {
                     Text("Create")

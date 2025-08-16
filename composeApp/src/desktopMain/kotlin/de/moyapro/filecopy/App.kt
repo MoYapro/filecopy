@@ -16,7 +16,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Preview
 fun App() {
 
-    val rootDir = java.io.File("/home/tom/patchbay_files")
+    val rootDir = java.io.File("/home/tom/Music")
     ThemeAppTheme(darkTheme = true) {
         Box(modifier = Modifier.fillMaxSize().background(md_theme_dark_surface)) {
             Box(
