@@ -32,9 +32,10 @@ const val SELECTION_FONT_SIZE: Int = 32
 fun FileTree(initialRootDir: File) {
     var rootDir by remember { mutableStateOf(initialRootDir) }
     var isValidSourceDirectory by remember { mutableStateOf(rootDir.isDirectory && rootDir.canRead() && rootDir.canWrite()) }
-    val nodes = loadDirectoryContents(rootDir).toMutableStateList()
-    var sourceDirectory by remember { mutableStateOf(rootDir.absolutePath) }
     var targetDirectory by remember { mutableStateOf("/home/tom/outdir") }
+    var sourceDirectory by remember { mutableStateOf(rootDir.absolutePath) }
+    val targetNodes = loadSubdir(targetDirectory).toMutableStateList()
+    val sourceNodes = loadDirectoryContents(rootDir, targetNodes).toMutableStateList()
     var isValidTargetDirectory by remember {
         val target = File(targetDirectory)
         mutableStateOf(target.isDirectory && target.canRead() && target.canWrite())
@@ -69,9 +70,9 @@ fun FileTree(initialRootDir: File) {
                 )
                 Button(onClick = {
                     if (!isValidSourceDirectory) return@Button
-                    nodes.clear()
-                    nodes.addAll(
-                        loadDirectoryContents(File(sourceDirectory))
+                    sourceNodes.clear()
+                    sourceNodes.addAll(
+                        loadDirectoryContents(File(sourceDirectory), targetNodes)
                     )
                 }) {
                     Text("Load source")
@@ -99,18 +100,26 @@ fun FileTree(initialRootDir: File) {
                     ),
                     textStyle = TextStyle(fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onBackground),
                 )
-                Button(onClick = { isValidTargetDirectory = createOutputDirectory(targetDirectory) }) {
-                    Text("Create")
+                Column {
+                    Button(onClick = { isValidTargetDirectory = createOutputDirectory(targetDirectory) }) {
+                        Text("Create")
+                    }
+                    Button(onClick = {
+                        if (isValidTargetDirectory) targetNodes.addAll(loadSubdir(File(targetDirectory)))
+                        else targetNodes.clear()
+                    }) {
+                        Text("Load output directory")
+                    }
                 }
             }
-            Button(onClick = { copy(nodes, targetDirectory) }) {
-                Text("Copy ${nodes.filter { it.isSelected == YES && it.isFile() }.size} files")
+            Button(onClick = { copy(sourceNodes, targetDirectory) }) {
+                Text("Copy ${sourceNodes.filter { it.isSelected == YES && it.isFile() }.size} files")
             }
         }
         LazyColumn(modifier = Modifier) {
-            items(items = nodes, key = { it.id }) { node ->
+            items(items = sourceNodes, key = { it.id }) { node ->
                 AnimatedVisibility(node.isVisible) {
-                    FileRow(node, nodes)
+                    FileRow(node, sourceNodes)
                 }
             }
         }
@@ -133,14 +142,10 @@ fun FileRow(node: FileSystemNode, nodes: MutableList<FileSystemNode> = mutableLi
 
 @Composable
 fun SelectionIndicator(node: FileSystemNode, onClick: () -> Unit) {
-    val text = when (node.isSelected) {
-        YES -> "[✔]"
-        PARTIAL -> "[-]"
-        NO -> "[ . ]"
-    }
+
     Box() {
         Text(
-            text = text,
+            text = "[${node.isSelected.symbol}]",
             textAlign = TextAlign.Center,
             fontSize = 22.sp,
             color = md_theme_dark_onBackground,
@@ -251,7 +256,7 @@ fun MutableList<FileSystemNode>.replace(elementToReplace: FileSystemNode) {
 }
 
 
-private fun determineFolderSelectionStatus(node: FileSystemNode, allTreeElements: List<FileSystemNode>): SELECTION {
+fun determineFolderSelectionStatus(node: FileSystemNode, allTreeElements: List<FileSystemNode>): SELECTION {
     val children = allTreeElements.filter { it.isFile() && it.isDirectChildOf(node.text()) }
     if (children.isEmpty()) return NO
     return when {

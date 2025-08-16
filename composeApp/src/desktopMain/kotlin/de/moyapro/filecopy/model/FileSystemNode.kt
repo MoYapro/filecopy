@@ -15,12 +15,16 @@ data class FileSystemNode(
     fun text(): String = file.absolutePath
 }
 
-enum class SELECTION {
-    YES, NO, PARTIAL;
+enum class SELECTION(val symbol: String = " ") {
+    YES("✔"),
+    NO(" . "),
+    PARTIAL(" - "),
+    ALREADY_COPIED("\uD83D\uDDB4");
 
     fun invert(): SELECTION = when (this) {
         NO -> YES
         YES -> NO
         PARTIAL -> NO
+        ALREADY_COPIED -> ALREADY_COPIED
     }
 }
