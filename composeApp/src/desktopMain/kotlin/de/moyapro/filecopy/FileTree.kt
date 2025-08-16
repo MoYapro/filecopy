@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.moyapro.filecopy.model.FileSystemNode
+import de.moyapro.filecopy.model.SELECTION
 import de.moyapro.filecopy.model.SELECTION.*
 import de.moyapro.filecopy.theme.*
 import java.io.File
@@ -203,25 +204,37 @@ fun countOccurences(haystack: String, needle: Char): Int {
 }
 
 fun MutableList<FileSystemNode>.select(id: UUID) {
-    var startIndex = -1
-    lateinit var clickedNodeName: String
-    var switchToSelection = YES
-    val replacedNodes = mutableListOf<FileSystemNode>()
+    val clickedNode = this.single { it.id == id }
+    val clickedOnSong = clickedNode.isFile()
+    val switchToSelection: SELECTION = clickedNode.isSelected.invert()
+    val clickedNodeName: String = clickedNode.text()
+    val replacedNodes = mutableListOf<FileSystemNode>(clickedNode.copy(isSelected = switchToSelection))
 
     for (i in indices) {
-        if (startIndex == -1 && this[i].id == id) {
-            startIndex = i
-            switchToSelection = this[i].isSelected.invert()
-            clickedNodeName = this[i].text()
-            replacedNodes.add(this[i].copy(isSelected = switchToSelection))
-        } else if (startIndex >= 0 && this[i].text().startsWith(clickedNodeName)) {
+        val currentNodeText = this[i].text()
+        if (currentNodeText.startsWith(clickedNodeName)) {
             replacedNodes.add(this[i].copy(isSelected = switchToSelection))
         }
     }
+    replacedNodes.forEach { node ->
+        val indexToReplace = indexOfFirst { node.id == it.id }
+        set(indexToReplace, node)
+    }
 
-    require(startIndex >= 0) { "Element to replace is not in the list." }
-    replacedNodes.forEachIndexed { index, node ->
-        set(startIndex + index, node)
+    for (i in indices) {
+        val currentNode = this[i]
+        if (clickedOnSong
+            && currentNode.isDirectory()
+            && clickedNode.isDirectChildOf(currentNode.text())
+        ) {
+            val folderSelected = determineFolderSelectionStatus(currentNode, this)
+            replacedNodes.add(this[i].copy(isSelected = folderSelected))
+        }
+    }
+
+    replacedNodes.forEach { node ->
+        val indexToReplace = indexOfFirst { node.id == it.id }
+        set(indexToReplace, node)
     }
 }
 
@@ -237,6 +250,16 @@ fun MutableList<FileSystemNode>.replace(elementToReplace: FileSystemNode) {
     set(index, elementToReplace)
 }
 
+
+private fun determineFolderSelectionStatus(node: FileSystemNode, allTreeElements: List<FileSystemNode>): SELECTION {
+    val children = allTreeElements.filter { it.isFile() && it.isDirectChildOf(node.text()) }
+    if (children.isEmpty()) return NO
+    return when {
+        children.all { it.isSelected == YES } -> YES
+        children.all { it.isSelected == NO } -> NO
+        else -> PARTIAL
+    }
+}
 
 fun createOutputDirectory(targetDirectory: String): Boolean {
     val target = File(targetDirectory)
@@ -257,3 +280,9 @@ fun copy(nodes: MutableList<FileSystemNode>, targetDirectory: String) {
         sourceFile.file.copyTo(File("$targetDirectory/${sourceFile.file.name}"))
     }
 }
+
+private fun FileSystemNode.isDirectChildOf(parentCandidate: String) =
+    this.text().count { it == '/' } == parentCandidate.count { it == '/' } + 1
+            && this.text().removeLastPathSegment() == parentCandidate
+
+private fun String.removeLastPathSegment() = this.substring(0, this.lastIndexOf('/'))
