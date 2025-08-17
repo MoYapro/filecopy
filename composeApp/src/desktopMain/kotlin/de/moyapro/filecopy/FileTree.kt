@@ -6,10 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Button
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,9 +54,15 @@ fun FileTree(initialRootDir: File) {
                             color = md_theme_dark_onSurface
                         )
                     },
-                    colors = TextFieldDefaults.textFieldColors(
-                        textColor = md_theme_dark_onSurface,
-                        backgroundColor = (if (isValidSourceDirectory) md_theme_dark_surface else md_theme_dark_error),
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = md_theme_dark_onSurface,
+                        unfocusedTextColor = md_theme_dark_onSurface,
+                        disabledTextColor = md_theme_dark_onSurface,
+                        errorTextColor = md_theme_dark_onSurface,
+                        focusedContainerColor = if (isValidSourceDirectory) md_theme_dark_surface else md_theme_dark_error,
+                        unfocusedContainerColor = if (isValidSourceDirectory) md_theme_dark_surface else md_theme_dark_error,
+                        disabledContainerColor = if (isValidSourceDirectory) md_theme_dark_surface else md_theme_dark_error,
+                        errorContainerColor = md_theme_dark_error,
                     ),
                     textStyle = TextStyle(fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onBackground),
                     onValueChange = { newText ->
@@ -94,9 +97,15 @@ fun FileTree(initialRootDir: File) {
                             color = md_theme_dark_onSurface
                         )
                     },
-                    colors = TextFieldDefaults.textFieldColors(
-                        textColor = md_theme_dark_onSurface,
-                        backgroundColor = (if (isValidTargetDirectory) md_theme_dark_surface else md_theme_dark_error),
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = md_theme_dark_onSurface,
+                        unfocusedTextColor = md_theme_dark_onSurface,
+                        disabledTextColor = md_theme_dark_onSurface,
+                        errorTextColor = md_theme_dark_onSurface,
+                        focusedContainerColor = if (isValidTargetDirectory) md_theme_dark_surface else md_theme_dark_error,
+                        unfocusedContainerColor = if (isValidTargetDirectory) md_theme_dark_surface else md_theme_dark_error,
+                        disabledContainerColor = if (isValidTargetDirectory) md_theme_dark_surface else md_theme_dark_error,
+                        errorContainerColor = md_theme_dark_error,
                     ),
                     textStyle = TextStyle(fontSize = SELECTION_FONT_SIZE.sp, color = md_theme_dark_onBackground),
                 )
@@ -112,8 +121,16 @@ fun FileTree(initialRootDir: File) {
                     }
                 }
             }
-            Button(onClick = { copy(sourceNodes, targetDirectory) }) {
-                Text("Copy ${sourceNodes.filter { it.isSelected == YES && it.isFile() }.size} files")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { copy(sourceNodes, targetDirectory) }) {
+                    Text("Copy ${sourceNodes.filter { it.isSelected == YES && it.isFile() }.size} files")
+                }
+                Button(
+                    onClick = { delete(sourceNodes, targetDirectory) },
+                    colors = ButtonDefaults.buttonColors(md_theme_dark_error)
+                ) {
+                    Text("Delete ${sourceNodes.filter { it.isSelected == DELETE && it.isFile() }.size} files")
+                }
             }
         }
         LazyColumn(modifier = Modifier) {
@@ -136,7 +153,12 @@ fun FileRow(node: FileSystemNode, nodes: MutableList<FileSystemNode> = mutableLi
     ) {
         TypeIndicator(node) { nodes.openCloseDirectory(node.id) }
         SelectionIndicator(node, selectNode)
-        Text(text = node.text(), fontSize = 22.sp, color = md_theme_dark_onBackground, modifier = Modifier.clickable(onClick = selectNode))
+        Text(
+            text = node.text(),
+            fontSize = 22.sp,
+            color = md_theme_dark_onBackground,
+            modifier = Modifier.clickable(onClick = selectNode)
+        )
     }
 }
 
@@ -284,6 +306,14 @@ fun copy(nodes: MutableList<FileSystemNode>, targetDirectory: String) {
     val copyFiles = nodes.filter { it.isSelected == YES && it.isFile() }
     copyFiles.forEach { sourceFile ->
         sourceFile.file.copyTo(File("$targetDirectory/${sourceFile.file.name}"))
+    }
+}
+
+fun delete(nodes: MutableList<FileSystemNode>, targetDirectory: String) {
+    val deleteFiles = nodes.filter { it.isSelected == DELETE && it.isFile() }
+    deleteFiles.forEach { sourceFile ->
+        val fileToDelete = File("$targetDirectory/${sourceFile.file.name}")
+        fileToDelete.delete()
     }
 }
 
