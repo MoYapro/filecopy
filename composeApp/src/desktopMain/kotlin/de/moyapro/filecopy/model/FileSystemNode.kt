@@ -17,14 +17,16 @@ data class FileSystemNode(
 
 enum class SELECTION(val symbol: String = " ") {
     YES("✔"),
-    NO(" . "),
+    NO(" \u200B \u200B \u200B"),
     PARTIAL(" - "),
-    ALREADY_COPIED("\uD83D\uDDB4");
+    ALREADY_COPIED("\uD83D\uDDB4"),
+    DELETE("␡");
 
     fun invert(): SELECTION = when (this) {
         NO -> YES
         YES -> NO
         PARTIAL -> NO
-        ALREADY_COPIED -> ALREADY_COPIED
+        ALREADY_COPIED -> DELETE
+        DELETE -> ALREADY_COPIED
     }
 }

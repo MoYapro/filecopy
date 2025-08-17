@@ -128,14 +128,15 @@ fun FileTree(initialRootDir: File) {
 
 @Composable
 fun FileRow(node: FileSystemNode, nodes: MutableList<FileSystemNode> = mutableListOf()) {
+    val selectNode = { nodes.select(node.id) }
     Row(
         modifier = Modifier.fillMaxWidth().height(40.dp).border(1.dp, md_theme_dark_outline),
         verticalAlignment = Alignment.CenterVertically
 
     ) {
-        SelectionIndicator(node) { nodes.select(node.id) }
         TypeIndicator(node) { nodes.openCloseDirectory(node.id) }
-        Text(text = node.text(), fontSize = 22.sp, color = md_theme_dark_onBackground)
+        SelectionIndicator(node, selectNode)
+        Text(text = node.text(), fontSize = 22.sp, color = md_theme_dark_onBackground, modifier = Modifier.clickable(onClick = selectNode))
     }
 }
 
@@ -260,7 +261,7 @@ fun determineFolderSelectionStatus(node: FileSystemNode, allTreeElements: List<F
     val children = allTreeElements.filter { it.isFile() && it.isDirectChildOf(node.text()) }
     if (children.isEmpty()) return NO
     return when {
-        children.all { it.isSelected == YES } -> YES
+        children.all { it.isSelected in listOf(YES, ALREADY_COPIED) } -> YES
         children.all { it.isSelected == NO } -> NO
         else -> PARTIAL
     }
